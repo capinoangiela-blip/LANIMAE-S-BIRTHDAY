@@ -528,45 +528,52 @@ const music = document.getElementById("bgMusic");
 
 let loopTimer;
 
-// 🎧 CHORUS SETTINGS
+// 🎧 TRACKS
 const tracks = [
   { src: null, start: 0, end: 0 },           // PAGE 1 (NO SOUND)
   { src: "song1.mp3", start: 65, end: 95 },  // PAGE 2
   { src: "song3.mp3", start: 70, end: 100 }, // PAGE 3
-  { src: "song4.mp3", start: 0, end: 0 },    // PAGE 4
-  { src: "song.mp3", start: 55, end: 85 }    // PAGE 5 (PAGE 1 SOUND MOVED HERE)
+  { src: "song4.mp3", start: 65, end: 100 },    // PAGE 4
+  { src: "song.mp3", start: 55, end: 85 }    // PAGE 5
 ];
 
 
-// 💖 PAGE 1 AUTOPLAY ON LOAD (IMPORTANT FIX)
-window.addEventListener("load", () => {
-  playTrack(tracks[0]);
-});
-
-
-// 🎵 PLAY FUNCTION (CHORUS SYSTEM)
+// 🎵 PLAY FUNCTION
 function playTrack(track){
 
-  music.src = track.src;
   clearInterval(loopTimer);
 
-  // PAGE 4 or no chorus
-  if(track.end === 0){
-    music.currentTime = 0;
-    music.play().catch(()=>{});
+  // 🚫 NO SOUND (Page 1)
+  if(!track.src){
+    music.pause();
+    music.src = "";
     return;
   }
 
-  music.currentTime = track.start;
+  music.src = track.src;
 
-  music.play().catch(()=>{});
+  // wait for audio to load before setting time
+  music.onloadedmetadata = () => {
 
-  loopTimer = setInterval(() => {
-    if(music.currentTime >= track.end){
-      music.currentTime = track.start;
-      music.play();
+    // full play (no chorus)
+    if(track.end === 0){
+      music.currentTime = 0;
+      music.play().catch(()=>{});
+      return;
     }
-  }, 500);
+
+    // chorus start
+    music.currentTime = track.start;
+
+    music.play().catch(()=>{});
+
+    // loop chorus
+    loopTimer = setInterval(() => {
+      if(music.currentTime >= track.end){
+        music.currentTime = track.start;
+      }
+    }, 400);
+  };
 }
 
 
@@ -576,14 +583,11 @@ function showPage(i){
   pages[i].classList.add('active');
 
   index = i;
-
-  if(tracks[i]){
-    playTrack(tracks[i]);
-  }
+  playTrack(tracks[i]);
 }
 
 
-// 👉 NEXT PAGE
+// 👉 NEXT
 function nextPage(){
   if(index < pages.length - 1){
     index++;
@@ -592,7 +596,7 @@ function nextPage(){
 }
 
 
-// 👈 PREVIOUS PAGE
+// 👈 PREVIOUS
 function prevPage(){
   if(index > 0){
     index--;
@@ -601,12 +605,18 @@ function prevPage(){
 }
 
 
-// 🔓 AUTOPLAY UNLOCK (required by browser)
-document.addEventListener("click", () => {
-  music.play().catch(()=>{});
-}, { once: true });
+// 🚀 INITIAL PAGE LOAD
+window.addEventListener("load", () => {
+  showPage(0); // show page 1 properly
+});
 
-function prevPage(){
+
+// 🔓 REQUIRED: FIRST CLICK ENABLES AUDIO
+document.addEventListener("click", () => {
+  if(tracks[index].src){
+    music.play().catch(()=>{});
+  }
+}, { once: true });function prevPage(){
   if(index>0){
     index--;
     showPage(index);
